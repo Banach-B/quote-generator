@@ -7,6 +7,7 @@ const newQuoteBtn = document.querySelector('#new-quote');
 const loader = document.querySelector('#loader');
 
 let apiQuotes = [];
+let retryCount = 0;
 
 // show loading 
 function showLoadingSpinner() {
@@ -18,11 +19,10 @@ function showLoadingSpinner() {
 function removeLoadingSpinner() {
     // random loading time between 1000 and 500 ms
     const randomDelay = Math.floor(Math.random() * (1000 - 500 + 1)) + 500;
-    setTimeout(function() {
+    setTimeout(function () {
         // main function - hide loader and show quote container
         quoteContainer.hidden = false;
         loader.hidden = true;
-
     }, randomDelay);
 }
 
@@ -57,29 +57,36 @@ function newQuote() {
     removeLoadingSpinner();
 }
 
-async function getQuotes() {
-    showLoadingSpinner();
-    const apiUrl = 'https://jacintodesign.github.io/quotes-api/data/quotes.json';
+    async function getQuotes() {
 
-    try {
-        const response = await fetch(apiUrl);
-        const data = await response.json();
-        apiQuotes = data;
-        newQuote();
+        // set maximum retry limit 
+        if (retryCount >= 10) {
+            alert("Reached maximum retry limit! Can't download quotes.")
+            return;
+        }
 
-    } catch {
-        // error handling 
-        console.log(`woops, can't load quotes`, error);
-        // recursion - try fetching data again
-        getQuotes();
+        showLoadingSpinner();
+        const apiUrl = 'https://jacintodesign.github.io/quotes-api/data/quotes.json';
+
+        try {
+            const response = await fetch(apiUrl);
+            const data = await response.json();
+            apiQuotes = data;
+            newQuote();
+
+        } catch {
+            // error handling 
+            // try fetching data again up to 10 times 
+            retryCount++;
+            getQuotes();
+        }
     }
-}
 
-// tweet quote
-function tweetQuote() {
-    const twitterUrl = `https://twitter.com/intent/tweet?text=${quoteText.textContent} - ${authorText.textContent}`;
-    window.open(twitterUrl, '_blank')
-}
+    // tweet quote
+    function tweetQuote() {
+        const twitterUrl = `https://twitter.com/intent/tweet?text=${quoteText.textContent} - ${authorText.textContent}`;
+        window.open(twitterUrl, '_blank')
+    }
 
 // On load 
 getQuotes();
